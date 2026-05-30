@@ -220,7 +220,7 @@ export default function AdminPage() {
                   <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                   <Tooltip
                     labelFormatter={(v) => new Date(v).toLocaleDateString()}
-                    formatter={(value: number) => [value, "New Users"]}
+                    formatter={(value) => [value ?? 0, "New Users"]}
                   />
                   <Bar dataKey="newUsers" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} />
                 </BarChart>
@@ -255,7 +255,7 @@ export default function AdminPage() {
                   <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                   <Tooltip
                     labelFormatter={(v) => new Date(v).toLocaleDateString()}
-                    formatter={(value: number) => [value, "New Posts"]}
+                    formatter={(value) => [value ?? 0, "New Posts"]}
                   />
                   <Bar dataKey="newPosts" fill="hsl(var(--chart-2, 160 60% 45%))" radius={[3, 3, 0, 0]} />
                 </BarChart>
