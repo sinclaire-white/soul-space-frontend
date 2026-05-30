@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Heart, Menu, User, LogOut, LayoutDashboard, Users, FileText, Sun, Moon, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useTheme } from "next-themes";
+import { usePathname } from "next/navigation";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
   AlertDialog,
@@ -30,6 +31,7 @@ export function Navbar() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const isConsultant = useIsConsultant();
   const isAdmin = useIsAdmin();
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -58,6 +60,13 @@ export function Navbar() {
     { href: "/contact", label: "Contact" },
   ];
 
+  const visibleNavLinks = navLinks.filter((link) => !(isAuthenticated && link.href === "/"));
+  const hideNavbarOnHome = isAuthenticated && pathname === "/";
+
+  if (hideNavbarOnHome) {
+    return null;
+  }
+
   return (
     <>
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
@@ -70,7 +79,7 @@ export function Navbar() {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-6">
-          {navLinks.map((link) => (
+          {visibleNavLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -103,7 +112,7 @@ export function Navbar() {
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                   <Avatar className="h-9 w-9">
                     <AvatarImage
-                      src={user?.nickname?.avatarUrl ?? undefined}
+                      src={user?.image ?? user?.nickname?.avatarUrl ?? undefined}
                       alt={user?.name || "User"}
                     />
                     <AvatarFallback className="bg-primary text-primary-foreground">
@@ -195,7 +204,7 @@ export function Navbar() {
           </SheetTrigger>
           <SheetContent side="right" className="w-72">
             <div className="flex flex-col gap-6 mt-6">
-              {navLinks.map((link) => (
+              {visibleNavLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}

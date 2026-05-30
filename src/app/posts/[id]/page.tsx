@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeft, MessageSquare, Eye, ThumbsUp, ThumbsDown } from "lucide-react";
 import { toast } from "sonner";
 
@@ -82,12 +83,17 @@ export default function PostDetailPage() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <CardTitle>
-              {post.isAnonymous
-                ? "Anonymous post"
-                : post.author?.id
-                ? <Link href={`/profile/${post.author.id}`} className="hover:underline">{post.author?.nickname?.handle || "Community post"}</Link>
-                : post.author?.nickname?.handle || "Community post"}
-            </CardTitle>
+                {post.isAnonymous ? (
+                  // Show nickname (if available) for anonymous posts
+                  post.nickname?.handle ? post.nickname.handle : "Anonymous post"
+                ) : post.author?.id ? (
+                  <Link href={`/profile/${post.author.id}`} className="hover:underline">
+                    {post.author?.name || post.author?.nickname?.handle || "Community post"}
+                  </Link>
+                ) : (
+                  post.author?.name || post.author?.nickname?.handle || "Community post"
+                )}
+              </CardTitle>
               <p className="mt-2 text-sm text-muted-foreground">{new Date(post.createdAt).toLocaleString()}</p>
             </div>
             <div className="flex items-center gap-2">
@@ -134,7 +140,7 @@ export default function PostDetailPage() {
               <MessageSquare className="h-4 w-4" />
               Comments
             </div>
-            {isAuthenticated ? (
+              {isAuthenticated ? (
               <div className="mb-4 space-y-3">
                 <Textarea
                   value={comment}
@@ -154,15 +160,46 @@ export default function PostDetailPage() {
             )}
 
             <div className="space-y-3">
-              {comments?.length ? comments.map((item: any) => (
-                <div key={item.id} className="rounded-lg bg-muted/40 p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-medium">{item.isAnonymous ? "Anonymous" : item.author?.nickname?.handle || "Community member"}</p>
-                    <span className="text-xs text-muted-foreground">{new Date(item.createdAt).toLocaleString()}</span>
+              {comments?.length ? comments.map((item: any) => {
+                // Determine display name for comment:
+                // - If comment is anonymous: show comment author's nickname if present, else 'Anonymous'
+                // - If comment is not anonymous but the parent post is anonymous and this comment is by the post owner,
+                //   prefer showing the owner's nickname so replies in the owner's anonymous post appear under their nickname.
+                const isPostOwner = item.author?.id && post.author?.id && item.author.id === post.author.id;
+                let commentDisplay = "Community member";
+                if (item.isAnonymous) {
+                  commentDisplay = item.author?.nickname?.handle || "Anonymous";
+                } else if (post.isAnonymous && isPostOwner) {
+                  commentDisplay = item.author?.nickname?.handle || item.author?.name || "Community member";
+                } else {
+                  commentDisplay = item.author?.name || item.author?.nickname?.handle || "Community member";
+                }
+
+                return (
+                  <div key={item.id} className="rounded-lg bg-muted/40 p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-9 w-9">
+                          <AvatarImage
+                            src={
+                              item.isAnonymous
+                                ? item.author?.nickname?.avatarUrl ?? undefined
+                                : item.author?.image ?? item.author?.nickname?.avatarUrl ?? undefined
+                            }
+                            alt={commentDisplay}
+                          />
+                          <AvatarFallback>{commentDisplay?.[0]?.toUpperCase() ?? "U"}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">{commentDisplay}</p>
+                          <span className="text-xs text-muted-foreground">{new Date(item.createdAt).toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{item.content}</p>
                   </div>
-                  <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{item.content}</p>
-                </div>
-              )) : <p className="text-sm text-muted-foreground">No comments yet.</p>}
+                );
+              }) : <p className="text-sm text-muted-foreground">No comments yet.</p>}
             </div>
           </div>
         </CardContent>

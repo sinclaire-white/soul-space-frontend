@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import {
   Select,
@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CONSULTANT_SPECIALIZATIONS } from "@/lib/constants";
+// specializations removed from listing and filters
 import { Star, Search, DollarSign, Calendar } from "lucide-react";
 import Link from "next/link";
 
@@ -26,21 +26,26 @@ interface Consultant {
   bio: string;
   hourlyRate: number;
   yearsExperience: number;
-  specializations: string[];
   averageRating: number | null;
   totalSessions: number;
   isAvailable: boolean;
+  address?: string;
   user: {
-    name: string;
+    name?: string | null;
+    image?: string | null;
+    age?: number | null;
+    nickname?: {
+      handle: string;
+      avatarUrl?: string | null;
+    } | null;
   };
 }
 
-const ALL_SPECIALIZATIONS_VALUE = "all-specializations";
+
 const ANY_PRICE_VALUE = "any-price";
 
 export default function ConsultantsPage() {
   const [search, setSearch] = useState("");
-  const [specialization, setSpecialization] = useState<string>(ALL_SPECIALIZATIONS_VALUE);
   const [maxPrice, setMaxPrice] = useState<string>(ANY_PRICE_VALUE);
 
   const {
@@ -50,13 +55,11 @@ export default function ConsultantsPage() {
     isError,
     refetch,
   } = useQuery({
-    queryKey: ["consultants", specialization, maxPrice],
+    queryKey: ["consultants", maxPrice],
     queryFn: () =>
       consultantsApi.getAll({
         page: 1,
         limit: 20,
-        specialization:
-          specialization !== ALL_SPECIALIZATIONS_VALUE ? specialization : undefined,
         maxPrice:
           maxPrice !== ANY_PRICE_VALUE ? parseInt(maxPrice, 10) : undefined,
       }),
@@ -75,7 +78,9 @@ export default function ConsultantsPage() {
   const filteredConsultants = consultants.filter(
     (consultant: Consultant) =>
       search === "" ||
-      consultant.user.name.toLowerCase().includes(search.toLowerCase()) ||
+      (consultant.user.name ?? consultant.user.nickname?.handle ?? "")
+        .toLowerCase()
+        .includes(search.toLowerCase()) ||
       consultant.professionalTitle.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -103,19 +108,7 @@ export default function ConsultantsPage() {
                   className="pl-10"
                 />
               </div>
-              <Select value={specialization} onValueChange={setSpecialization}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Specialization" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL_SPECIALIZATIONS_VALUE}>All Specializations</SelectItem>
-                  {CONSULTANT_SPECIALIZATIONS.map((spec) => (
-                    <SelectItem key={spec} value={spec}>
-                      {spec}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {/* specialization filter removed */}
               <Select value={maxPrice} onValueChange={setMaxPrice}>
                 <SelectTrigger>
                   <SelectValue placeholder="Max Price" />
@@ -189,15 +182,21 @@ export default function ConsultantsPage() {
                 <CardContent className="pt-6 flex-1 flex flex-col">
                   <div className="flex items-start gap-4 mb-4">
                     <Avatar className="h-16 w-16">
-                      <AvatarFallback className="bg-primary/10 text-primary text-lg">
-                        {consultant.user.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
-                      </AvatarFallback>
+                      {consultant.user.image ? (
+                        <AvatarImage src={consultant.user.image} />
+                      ) : consultant.user.nickname?.avatarUrl ? (
+                        <AvatarImage src={consultant.user.nickname.avatarUrl} />
+                      ) : (
+                        <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                          {(consultant.user.name ?? consultant.user.nickname?.handle ?? "U")
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </AvatarFallback>
+                      )}
                     </Avatar>
                     <div className="flex-1">
-                      <h3 className="font-semibold">{consultant.user.name}</h3>
+                      <h3 className="font-semibold">{consultant.user.name ?? consultant.user.nickname?.handle ?? "Consultant"}</h3>
                       <p className="text-sm text-muted-foreground">
                         {consultant.professionalTitle}
                       </p>
@@ -222,34 +221,29 @@ export default function ConsultantsPage() {
                   </div>
 
                   <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
-                    {consultant.bio}
+                    {consultant.address || consultant.bio || "Licensed mental health professional"}
                   </p>
 
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {consultant.specializations.slice(0, 3).map((spec) => (
-                      <Badge key={spec} variant="outline" className="text-xs">
-                        {spec}
-                      </Badge>
-                    ))}
-                    {consultant.specializations.length > 3 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{consultant.specializations.length - 3}
-                      </Badge>
-                    )}
-                  </div>
+                  {/* specializations removed from public listing */}
 
                   <Separator className="my-4" />
 
                   <div className="flex items-center justify-between text-sm mt-auto">
-                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-4">
                       <span className="flex items-center gap-1">
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        ${consultant.hourlyRate}/hr
+                        {typeof consultant.hourlyRate === "number" ? (
+                          <>{`$${consultant.hourlyRate}/hr`}</>
+                        ) : (
+                          <span className="text-muted-foreground">Contact for rates</span>
+                        )}
                       </span>
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        {consultant.yearsExperience} yrs
-                      </span>
+                      {consultant.user.age != null ? (
+                        <span className="flex items-center gap-1 text-muted-foreground">
+                          <Calendar className="h-4 w-4" />
+                          Age {consultant.user.age}
+                        </span>
+                      ) : null}
                     </div>
                   </div>
                 </CardContent>

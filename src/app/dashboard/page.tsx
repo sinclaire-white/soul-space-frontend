@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, FileText, MessageSquare, User, Clock } from "lucide-react";
+import { Calendar, FileText, MessageSquare, User } from "lucide-react";
 import Link from "next/link";
 
 export default function DashboardPage() {
@@ -30,34 +30,28 @@ export default function DashboardPage() {
       isConsultant
         ? bookingsApi.getConsultantBookings({ page: 1, limit: 5 })
         : bookingsApi.getAll({ page: 1, limit: 5 }),
-    select: (res) => res.data.data,
+    select: (res) => ({
+      bookings: Array.isArray(res.data.data) ? res.data.data : [],
+      total: res.data.meta?.total ?? 0,
+    }),
     enabled: isAuthenticated,
   });
 
   const stats = [
     {
-      title: "My Posts",
+      title: "Posts",
       value: myPosts?.total || 0,
       icon: FileText,
-      href: "/feed",
     },
     {
       title: "Comments",
       value: 0,
       icon: MessageSquare,
-      href: "/feed",
     },
     {
       title: "Bookings",
       value: myBookings?.total || 0,
       icon: Calendar,
-      href: isConsultant ? "/consultant/dashboard" : "/consultants",
-    },
-    {
-      title: "Sessions",
-      value: myBookings?.bookings?.filter((b: any) => b.status === "COMPLETED").length || 0,
-      icon: Clock,
-      href: isConsultant ? "/consultant/dashboard" : "/dashboard",
     },
   ];
 
@@ -89,23 +83,21 @@ export default function DashboardPage() {
       </div>
 
         {/* Stats Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           {stats.map((stat) => (
-            <Link key={stat.title} href={stat.href}>
-              <Card className="cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-md animate-slide-up stagger-2">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">{stat.title}</p>
-                      <p className="text-2xl font-bold">{stat.value}</p>
-                    </div>
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <stat.icon className="h-6 w-6 text-primary" />
-                    </div>
+            <Card key={stat.title} className="transition-all duration-300 animate-slide-up stagger-2">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">{stat.title}</p>
+                    <p className="text-2xl font-bold">{stat.value}</p>
                   </div>
-                </CardContent>
-              </Card>
-            </Link>
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <stat.icon className="h-6 w-6 text-primary" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
 

@@ -118,9 +118,18 @@ export default function AdminConsultantApplicationsPage() {
                 <p className="sm:col-span-2"><span className="text-muted-foreground">Clinic/Hospital:</span> {application.address}</p>
                 <p className="sm:col-span-2">
                   <span className="text-muted-foreground">Certification PDF:</span>{" "}
-                  <a href={application.certificationDocumentUrl} target="_blank" rel="noreferrer" className="text-primary underline">
-                    View document
-                  </a>
+                  {application.certificationDocumentUrl ? (
+                    <a
+                      href={application.certificationDocumentUrl}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="text-primary underline"
+                    >
+                      View document
+                    </a>
+                  ) : (
+                    <span className="text-muted-foreground">No document uploaded</span>
+                  )}
                 </p>
                 {application.reviewNote && (
                   <p className="sm:col-span-2"><span className="text-muted-foreground">Review note:</span> {application.reviewNote}</p>

@@ -2,9 +2,10 @@
 
 import { useState, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { authApi, nicknamesApi, usersApi } from "@/lib/api";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, useIsConsultant } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,9 @@ import { Mail, ShieldCheck, Sparkles, Pencil, Check, X, Camera } from "lucide-re
 import { toast } from "sonner";
 
 export default function ProfilePage() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, refreshUser } = useAuth();
+  const isConsultant = useIsConsultant();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -45,12 +48,13 @@ export default function ProfilePage() {
 
   const updateProfileMutation = useMutation({
     mutationFn: (formData: FormData) => usersApi.updateProfile(formData),
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       setIsEditingProfile(false);
       setImageFile(null);
       setImagePreview(null);
       toast.success("Profile updated");
+      await refreshUser();
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.message || "Failed to update profile");
@@ -59,10 +63,11 @@ export default function ProfilePage() {
 
   const updateNicknameMutation = useMutation({
     mutationFn: (handle: string) => nicknamesApi.update(nickname?.id || "", { handle }),
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["nickname", "me"] });
       setIsEditingNickname(false);
       toast.success("Nickname updated");
+      await refreshUser();
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.message || "Failed to update nickname");
@@ -71,10 +76,11 @@ export default function ProfilePage() {
 
   const createNicknameMutation = useMutation({
     mutationFn: (handle: string) => nicknamesApi.create({ handle }),
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["nickname", "me"] });
       setIsEditingNickname(false);
       toast.success("Nickname created");
+      await refreshUser();
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.message || "Failed to create nickname");
@@ -466,18 +472,38 @@ export default function ProfilePage() {
                     <span className="text-sm text-muted-foreground">Verification</span>
                     <Badge variant="secondary">{profile.consultant.verificationStatus}</Badge>
                   </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Roles</span>
+                    <span className="font-medium">
+                      {profile.role}
+                      {profile.consultant ? ", CONSULTANT" : ""}
+                    </span>
+                  </div>
                 </>
               ) : (
                 <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
                   Consultant profile not created yet.
                 </div>
               )}
-              <Link href="/dashboard">
-                <Button variant="outline" className="w-full">
+              <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => router.push(profile?.consultant ? "/consultant/dashboard" : "/dashboard")}
+                >
                   <Sparkles className="mr-2 h-4 w-4" />
-                  Back to Dashboard
+                  {profile?.consultant ? "Manage Consultant Settings" : "Back to Dashboard"}
                 </Button>
-              </Link>
+                {profile?.consultant && (
+                  <Button
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => router.push("/consultant/dashboard")}
+                  >
+                    View Consultant Dashboard
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>

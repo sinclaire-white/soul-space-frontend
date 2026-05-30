@@ -26,10 +26,12 @@ interface Post {
   author: {
     id: string;
     name: string;
+    image?: string | null;
     nickname?: { handle: string; avatarUrl?: string | null } | null;
   };
   nickname?: {
     handle: string;
+    avatarUrl?: string | null;
   };
   _count?: {
     comments: number;
@@ -180,10 +182,19 @@ export default function FeedPage() {
       ) : (
         <div className="space-y-4">
           {postsData?.posts?.map((post: Post) => {
-            const authorHandle = post.isAnonymous
-              ? null
-              : post.author?.nickname?.handle || post.nickname?.handle || null;
             const authorId = post.author?.id;
+            // Display rules (priority):
+            // - If post author is the current user, prefer `user.name` for non-anonymous posts.
+            // - For anonymous posts by the current user, prefer `myNickname.handle` if available.
+            // - Otherwise, fall back to post.nickname, then post.author.nickname, then generic fallback.
+            const isOwner = isAuthenticated && user?.id && authorId === user.id;
+            const authorDisplay = post.isAnonymous
+              ? isOwner
+                ? myNickname?.handle || post.nickname?.handle || post.author?.nickname?.handle || "Anonymous"
+                : post.nickname?.handle || post.author?.nickname?.handle || "Anonymous"
+              : isOwner
+              ? user?.name || post.author?.name || post.author?.nickname?.handle || post.nickname?.handle || "Unknown"
+              : post.author?.name || post.author?.nickname?.handle || post.nickname?.handle || "Unknown";
 
             return (
               <Card key={post.id} className="animate-slide-up stagger-3">
@@ -192,23 +203,22 @@ export default function FeedPage() {
                     <div className="flex items-center gap-3">
                       <Avatar className="h-10 w-10">
                         <AvatarImage
-                          src={post.isAnonymous ? undefined : (post.author?.nickname?.avatarUrl ?? undefined)}
-                          alt={authorHandle || "User"}
+                          src={post.isAnonymous ? (post.nickname?.avatarUrl ?? undefined) : (post.author?.image ?? post.author?.nickname?.avatarUrl ?? undefined)}
+                          alt={authorDisplay || "User"}
                         />
                         <AvatarFallback className="bg-primary/10 text-primary">
-                          {post.isAnonymous ? "?" : authorHandle?.[0]?.toUpperCase() || "U"}
+                          {post.isAnonymous ? "?" : (authorDisplay ? authorDisplay[0]?.toUpperCase() : "U")}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        {post.isAnonymous || !authorId ? (
-                          <p className="font-medium">Anonymous</p>
-                        ) : (
-                          <Link
-                            href={`/profile/${authorId}`}
-                            className="font-medium hover:underline"
-                          >
-                            {authorHandle || "Unknown"}
+                        {post.isAnonymous ? (
+                          <p className="font-medium">{isOwner ? (myNickname?.handle || post.nickname?.handle || "Anonymous") : (post.nickname?.handle || post.author?.nickname?.handle || "Anonymous")}</p>
+                        ) : authorId ? (
+                          <Link href={`/profile/${authorId}`} className="font-medium hover:underline">
+                            {authorDisplay || "Unknown"}
                           </Link>
+                        ) : (
+                          <p className="font-medium">{authorDisplay || "Unknown"}</p>
                         )}
                         <p className="text-xs text-muted-foreground">
                           {formatDate(post.createdAt)}

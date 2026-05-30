@@ -1,12 +1,12 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
-import { consultantApplicationsApi } from "@/lib/api";
+import { authApi, consultantApplicationsApi } from "@/lib/api";
 import { useAuth, useIsConsultant } from "@/hooks/useAuth";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -98,8 +98,51 @@ export default function ConsultantApplyPage() {
     phone: "",
     address: "",
     age: "",
+    hourlyRate: "",
+    availabilityDays: [] as string[],
   });
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    authApi.getMe()
+      .then((res) => {
+        const me = res.data.data;
+        setFormData((prev) => ({
+          ...prev,
+          fullName: me.name || prev.fullName,
+          email: me.email || prev.email,
+          phone: me.phone || prev.phone || "",
+          address: me.address || prev.address || "",
+          age: me.age ? String(me.age) : prev.age || "",
+        }));
+      })
+      .catch(() => {
+        // ignore — user fills manually
+      });
+  }, [isAuthenticated]);
   const [documentFile, setDocumentFile] = useState<File | null>(null);
+  const daysOfWeek = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ];
+
+  const toggleAvailabilityDay = (day: string) => {
+    setFormData((prev) => {
+      const hasDay = prev.availabilityDays.includes(day);
+      return {
+        ...prev,
+        availabilityDays: hasDay
+          ? prev.availabilityDays.filter((existingDay) => existingDay !== day)
+          : [...prev.availabilityDays, day],
+      };
+    });
+  };
 
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) {
@@ -120,6 +163,8 @@ export default function ConsultantApplyPage() {
       formData.phone.trim() &&
       formData.address.trim() &&
       formData.age.trim() &&
+      formData.hourlyRate.trim() &&
+      formData.availabilityDays.length > 0 &&
       documentFile &&
       paymentIntentId &&
       isPaymentComplete
@@ -142,6 +187,9 @@ export default function ConsultantApplyPage() {
     }
   };
 
+  const availabilityWindowStart = "10:00";
+  const availabilityWindowEnd = "22:00";
+
   const handleSubmitApplication = async (e: FormEvent) => {
     e.preventDefault();
 
@@ -161,6 +209,10 @@ export default function ConsultantApplyPage() {
       payload.append("address", formData.address.trim());
       payload.append("age", formData.age.trim());
       payload.append("paymentIntentId", paymentIntentId);
+      payload.append("hourlyRate", formData.hourlyRate.trim());
+      payload.append("availabilityDays", JSON.stringify(formData.availabilityDays));
+      payload.append("availableFrom", availabilityWindowStart);
+      payload.append("availableTo", availabilityWindowEnd);
       payload.append("certificationDocument", documentFile);
 
       await consultantApplicationsApi.submit(payload);
@@ -350,6 +402,18 @@ export default function ConsultantApplyPage() {
                   required
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="hourlyRate">Hourly Rate (USD)</Label>
+                <Input
+                  id="hourlyRate"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={formData.hourlyRate}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, hourlyRate: e.target.value }))}
+                  required
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -360,6 +424,37 @@ export default function ConsultantApplyPage() {
                 onChange={(e) => setFormData((prev) => ({ ...prev, address: e.target.value }))}
                 required
               />
+            </div>
+
+            <div className="rounded-lg border p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Availability</Label>
+                  <p className="text-xs text-muted-foreground">Select the days you are available. Times are fixed from 10:00 AM to 10:00 PM.</p>
+                </div>
+                <Badge variant="secondary" className="uppercase">
+                  10 AM – 10 PM
+                </Badge>
+              </div>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {daysOfWeek.map((day) => {
+                  const selected = formData.availabilityDays.includes(day);
+                  return (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => toggleAvailabilityDay(day)}
+                      className={`rounded-xl border px-3 py-2 text-left text-sm transition-colors ${
+                        selected
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-background text-foreground hover:border-primary/80"
+                      }`}
+                    >
+                      {day}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="space-y-2">

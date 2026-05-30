@@ -174,6 +174,7 @@ export const consultantApplicationsApi = {
     apiClient.get("/consultant-applications/admin", { params }),
   review: (id: string, data: { status: "APPROVED" | "REJECTED"; reviewNote?: string }) =>
     apiClient.patch(`/consultant-applications/admin/${id}/review`, data),
+  
 };
 
 export const bookingsApi = {
@@ -191,12 +192,18 @@ export const bookingsApi = {
   update: (id: string, data: { status?: string; meetingLink?: string }) =>
     apiClient.patch(`/bookings/${id}`, data),
   cancel: (id: string) => apiClient.patch(`/bookings/${id}/cancel`),
+  confirm: (id: string) => apiClient.patch(`/bookings/${id}/confirm`),
+  decline: (id: string) => apiClient.patch(`/bookings/${id}/decline`),
+  complete: (id: string) => apiClient.patch(`/bookings/${id}/complete`),
   getAvailability: (consultantId: string, date: string) =>
     apiClient.get(`/availabilities/slots/${consultantId}`, { params: { fromDate: date } }),
 };
 
 export const availabilitiesApi = {
   getMine: () => apiClient.get("/availabilities/me"),
+  update: (id: string, data: { dayOfWeek?: number; startTime?: string; endTime?: string; isRecurring?: boolean; isBlocked?: boolean }) =>
+    apiClient.patch(`/availabilities/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/availabilities/${id}`),
 };
 
 export const nicknamesApi = {

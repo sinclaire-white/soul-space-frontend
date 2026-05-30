@@ -18,7 +18,7 @@ import {
 
 const userNavItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
-  { href: "/feed", label: "My Posts", icon: FileText },
+  { href: "/my-posts", label: "My Posts", icon: FileText },
   { href: "/consultants", label: "Find Consultants", icon: Users },
   { href: "/profile", label: "Profile", icon: User },
 ];

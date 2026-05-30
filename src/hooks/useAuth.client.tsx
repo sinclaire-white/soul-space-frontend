@@ -17,6 +17,7 @@ interface User {
     handle: string;
     avatarUrl?: string;
   };
+  image?: string | null;
   consultant?: {
     id: string;
     verificationStatus: string;
@@ -200,7 +201,7 @@ export function useAuth() {
 
 export function useIsConsultant() {
   const { user } = useAuth();
-  return user?.role === USER_ROLES.CONSULTANT;
+  return user?.role === USER_ROLES.CONSULTANT || Boolean(user?.consultant);
 }
 
 export function useIsAdmin() {
@@ -215,5 +216,5 @@ export function useIsSuperAdmin() {
 
 export function useIsVerifiedConsultant() {
   const { user } = useAuth();
-  return user?.role === USER_ROLES.CONSULTANT && user?.consultant?.verificationStatus === "VERIFIED";
+  return Boolean(user?.consultant?.verificationStatus === "VERIFIED");
 }
