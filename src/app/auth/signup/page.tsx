@@ -30,14 +30,7 @@ export default function SignUpPage() {
     setIsLoading(true);
 
     try {
-      const result = await register(formData);
-
-      if (result.requiresVerification) {
-        toast.success("Account created. Verify your email to continue.");
-        router.push(`/auth/verify-email?email=${encodeURIComponent(result.email)}`);
-        return;
-      }
-
+      await register(formData);
       toast.success("Account created successfully!");
       router.push("/feed");
     } catch (err: any) {

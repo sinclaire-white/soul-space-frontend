@@ -34,18 +34,12 @@ interface RegisterData {
   name: string;
 }
 
-interface AuthActionResult {
-  requiresVerification: boolean;
-  email: string;
-}
-
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<AuthActionResult>;
-  register: (data: RegisterData) => Promise<AuthActionResult>;
-
+  login: (email: string, password: string) => Promise<void>;
+  register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -84,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!token || !sessionToken) {
         clearAuth();
+        setIsLoading(false);
         return;
       }
 
@@ -100,50 +95,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = async (email: string, password: string): Promise<AuthActionResult> => {
+  const login = async (email: string, password: string): Promise<void> => {
     const response = await authApi.login({ email, password });
     const { user: nextUser, token, refreshToken, sessionToken } = response.data.data;
 
-    if (!sessionToken || !nextUser.emailVerified) {
-      clearAuth();
-      setUser(null);
-
-      return {
-        requiresVerification: true,
-        email: nextUser.email,
-      };
-    }
-
     persistAuth(token, refreshToken, sessionToken);
     setUser(nextUser);
-
-    return {
-      requiresVerification: false,
-      email: nextUser.email,
-    };
   };
 
-  const register = async (data: RegisterData): Promise<AuthActionResult> => {
+  const register = async (data: RegisterData): Promise<void> => {
     const response = await authApi.register(data);
     const { user: nextUser, token, refreshToken, sessionToken } = response.data.data;
 
-    if (!sessionToken || !nextUser.emailVerified) {
-      clearAuth();
-      setUser(null);
-
-      return {
-        requiresVerification: true,
-        email: nextUser.email,
-      };
-    }
-
     persistAuth(token, refreshToken, sessionToken);
     setUser(nextUser);
-
-    return {
-      requiresVerification: false,
-      email: nextUser.email,
-    };
   };
 
   const logout = async () => {

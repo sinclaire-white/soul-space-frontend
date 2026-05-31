@@ -42,7 +42,6 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Handle token refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
@@ -81,9 +80,6 @@ export const authApi = {
     apiClient.post("/auth/register", data),
   login: (data: { email: string; password: string }) =>
     apiClient.post("/auth/login", data),
-
-  verifyEmail: (data: { email: string; otp: string }) =>
-    apiClient.post("/auth/verify-email", data),
   logout: () => {
     const sessionToken = getStoredValue("sessionToken");
     return apiClient.post("/auth/logout", { sessionToken });
@@ -91,10 +87,6 @@ export const authApi = {
   getMe: () => apiClient.get("/auth/me"),
   changePassword: (data: { currentPassword: string; newPassword: string }) =>
     apiClient.post("/auth/change-password", data),
-  forgotPassword: (data: { email: string }) =>
-    apiClient.post("/auth/forgot-password", data),
-  resetPassword: (data: { email: string; otp: string; newPassword: string }) =>
-    apiClient.post("/auth/reset-password", data),
 };
 
 export const postsApi = {
@@ -245,7 +237,6 @@ export const reviewsApi = {
 };
 
 export const adminApi = {
-  // Legacy / simple
   getUsers: (params?: { page?: number; limit?: number; search?: string }) =>
     apiClient.get("/users", { params }),
   getReports: (params?: { page?: number; limit?: number; status?: string }) =>
@@ -259,7 +250,6 @@ export const adminApi = {
     data: { status: "APPROVED" | "REJECTED"; reviewNote?: string }
   ) => apiClient.patch(`/consultant-applications/admin/${id}/review`, data),
 
-  // Admin management endpoints
   getDashboardStats: () => apiClient.get("/admin/dashboard/stats"),
   getDailyStats: (days = 30) => apiClient.get("/admin/stats/daily", { params: { days } }),
   getAllUsers: (params?: { page?: number; limit?: number; search?: string }) =>

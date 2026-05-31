@@ -29,14 +29,7 @@ export default function SignInPage() {
     setIsLoading(true);
 
     try {
-      const result = await login(formData.email, formData.password);
-
-      if (result.requiresVerification) {
-        toast.info("Verify your email to continue");
-        router.push(`/auth/verify-email?email=${encodeURIComponent(result.email)}`);
-        return;
-      }
-
+      await login(formData.email, formData.password);
       toast.success("Welcome back!");
       router.push("/feed");
     } catch (err: any) {
@@ -111,15 +104,6 @@ export default function SignInPage() {
                   )}
                 </button>
               </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <Link
-                href="/auth/forgot-password"
-                className="text-sm text-primary hover:underline"
-              >
-                Forgot password?
-              </Link>
             </div>
 
             <Button type="submit" className="w-full" disabled={isLoading}>
